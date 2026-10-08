@@ -88,7 +88,7 @@ def get_dotslash_config(version: str, binaries: Mapping[str, Path]) -> Any:
                 "hash": "sha256",
                 "digest": get_digest(bin_path),
                 "format": "zip",
-                "path": f"{bin_path.name.removesuffix(".zip")}/fourmolu",
+                "path": f"{bin_path.name.removesuffix(".zip")}/{get_exe_name(name)}",
                 "providers": [
                     {"url": f"{BASE_DOWNLOAD_URL}/v{version}/{bin_path.name}"},
                 ],
@@ -96,6 +96,10 @@ def get_dotslash_config(version: str, binaries: Mapping[str, Path]) -> Any:
             for name, bin_path in binaries.items()
         },
     }
+
+
+def get_exe_name(platform: str) -> str:
+    return "fourmolu.exe" if platform.startswith("windows-") else "fourmolu"
 
 
 def get_digest(bin_path: Path) -> str:

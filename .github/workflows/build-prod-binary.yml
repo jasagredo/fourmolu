@@ -9,6 +9,11 @@ on:
         type: string
         required: true
 
+# Windows runners default to pwsh
+defaults:
+  run:
+    shell: bash -eu -o pipefail {0}
+
 jobs:
   build:
     strategy:
@@ -24,6 +29,7 @@ jobs:
         (matrix.platform == 'linux-arm64' && 'ubuntu-24.04-arm') ||
         (matrix.platform == 'darwin-x86_64' && 'macos-15-intel') ||
         (matrix.platform == 'darwin-arm64' && 'macos-15') ||
+        (matrix.platform == 'windows-x86_64' && 'windows-2025') ||
         null
       }}
     env:
@@ -41,6 +47,7 @@ jobs:
           case ${{ runner.os }} in
             (Linux) os=linux ;;
             (macOS) os=darwin ;;
+            (Windows) os=windows ;;
             (*) echo 'Unknown OS' >&1; exit 1 ;;
           esac
           case ${{ runner.arch }} in
@@ -54,13 +61,15 @@ jobs:
           fi
       -
         uses: haskell-actions/setup@v2.12.0
+        id: setup
         with:
           enable-stack: true
           stack-no-global: true
       -
         uses: actions/cache@v6
         with:
-          path: ~/.stack
+          # ~/.stack on Linux/macOS, %APPDATA%\stack on Windows
+          path: ${{ steps.setup.outputs.stack-root }}
           key: ${{ matrix.platform }}-build-prod-binary-${{ hashFiles('stack.yaml', 'fourmolu.cabal') }}
           restore-keys: |
                ${{ matrix.platform }}-build-prod-binary-
@@ -68,8 +77,14 @@ jobs:
         name: Build
         run: |
           stack install :fourmolu --local-bin-path ./bin/
-          strip bin/fourmolu
-          cp bin/fourmolu bin/fourmolu-${version}-${platform}
+          if [[ ${{ runner.os }} == Windows ]]; then
+            # Use the strip from stack's GHC toolchain; Git Bash may not have one
+            stack exec -- strip bin/fourmolu.exe
+            cp bin/fourmolu.exe bin/fourmolu-${version}-${platform}.exe
+          else
+            strip bin/fourmolu
+            cp bin/fourmolu bin/fourmolu-${version}-${platform}
+          fi
       -
         name: Store binary
         uses: actions/upload-artifact@v7
