@@ -108,6 +108,8 @@ jobs:
             | tee .release/release-notes.md
       -
         uses: haskell-actions/hackage-publish@v1
+        # Forks have no Hackage token; skip publishing there
+        if: github.repository == 'fourmolu/fourmolu'
         with:
           hackageToken: ${{ secrets[steps.hackage_token_secret.outputs.name] }}
           packagesPath: ./.release/sdist
@@ -116,7 +118,9 @@ jobs:
         with:
           tag_name: v${{ env.version }}
           body_path: .release/release-notes.md
-          draft: true
+          # Upstream curates a draft; forks publish directly so tools like
+          # mise can see the release
+          draft: ${{ github.repository == 'fourmolu/fourmolu' }}
           target_commitish: ${{ github.sha }}
           files: .release/bin/*
           fail_on_unmatched_files: true
