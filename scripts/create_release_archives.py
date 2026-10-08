@@ -9,6 +9,10 @@ Convert it into a zip file in the same directory named:
 Containing the following directory structure:
     fourmolu-0.0.0-linux-x86_64/
     └── fourmolu
+
+Windows binaries keep their extension inside the archive, e.g.
+fourmolu-0.0.0-windows-x86_64.exe becomes fourmolu-0.0.0-windows-x86_64.zip
+containing fourmolu-0.0.0-windows-x86_64/fourmolu.exe.
 """
 
 import argparse
@@ -35,19 +39,21 @@ def main():
                 logging.warning(f"Skipping file: {file}")
                 continue
 
+            name = file.name.removesuffix(".exe")
             create_archive(
                 src=file,
-                dest=file.parent / f"{file.name}.zip",
+                dest=file.parent / f"{name}.zip",
                 tmpdir=Path(tmpdir),
             )
 
 
 def create_archive(*, src: Path, dest: Path, tmpdir: Path) -> None:
-    outer_dir = src.name
+    outer_dir = src.name.removesuffix(".exe")
+    exe_name = "fourmolu.exe" if src.suffix == ".exe" else "fourmolu"
     (tmpdir / outer_dir).mkdir()
 
     src.chmod(0o755)
-    src.rename(tmpdir / outer_dir / "fourmolu")
+    src.rename(tmpdir / outer_dir / exe_name)
 
     subprocess.run(
         ["zip", "-r", dest.absolute(), outer_dir],
