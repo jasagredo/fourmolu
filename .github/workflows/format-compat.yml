@@ -33,10 +33,16 @@ jobs:
         with:
           path: fourmolu
       -
+        # The GHC installed in ~/.stack is configured for the image it was
+        # installed on, so the cache must not cross runner image upgrades
+        name: Get runner image
+        id: image
+        run: echo "os=${ImageOS}" >> "${GITHUB_OUTPUT}"
+      -
         uses: actions/cache@v6
         with:
           path: ~/.stack
-          key: ${{ runner.os }}-format_compat-${{ hashFiles('fourmolu/stack.yaml', 'fourmolu/fourmolu.cabal') }}
+          key: ${{ runner.os }}-${{ steps.image.outputs.os }}-format_compat-${{ hashFiles('fourmolu/stack.yaml', 'fourmolu/fourmolu.cabal') }}
       -
         name: Install fourmolu
         working-directory: fourmolu
